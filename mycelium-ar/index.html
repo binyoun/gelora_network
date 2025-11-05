@@ -313,14 +313,14 @@
             // Define 3D positions for each direction (x, y, z)
             // Closer positions, lower height, more spread
             const positions3D = {
-                north:     { x: 0,     y: 0,  z: -0.8 },
-                south:     { x: 0,     y: 0,  z: 0.8 },
+                north:     { x: 1,     y: 0,  z: 0.8 },
+                south:     { x: 1,     y: 0,  z: 1.8 },
                 east:      { x: 0.8,   y: 0,  z: 0 },
-                west:      { x: -0.8,  y: 0,  z: 0 },
-                northeast: { x: 0.6,   y: 0,  z: -0.6 },
-                northwest: { x: -0.6,  y: 0,  z: -0.6 },
-                southeast: { x: 0.6,   y: 0,  z: 0.6 },
-                southwest: { x: -0.6,  y: 0,  z: 0.6 }
+                west:      { x: -1.8,  y: 0,  z: 0 },
+                northeast: { x: 0.6,   y: 0,  z: 0.6 },
+                northwest: { x: -1.6,  y: 0,  z: 0.6 },
+                southeast: { x: 1.6,   y: 0,  z: 1.6 },
+                southwest: { x: -1.6,  y: 0,  z: 1.6 }
             };
             
             const pos3D = positions3D[direction];
@@ -332,7 +332,7 @@
             model.setAttribute('gps-entity-place', `latitude: ${gpsPos.lat}; longitude: ${gpsPos.lon};`);
             
             // Set initial position (center, on ground) and scale
-            model.setAttribute('position', '0 0 -0.5');
+            model.setAttribute('position', '0 0 0.5');
             model.setAttribute('scale', '0 0 0');
             
             scene.appendChild(model);
@@ -343,7 +343,7 @@
                 model.setAttribute('animation__grow', {
                     property: 'scale',
                     from: '0 0 0',
-                    to: '0.2 0.2 0.2',
+                    to: '0.3 0.3 0.3',
                     dur: 1800,
                     easing: 'easeOutQuad'
                 });
@@ -352,7 +352,7 @@
                 setTimeout(() => {
                     model.setAttribute('animation__spread', {
                         property: 'position',
-                        from: '0 0 -0.5',
+                        from: '0 0 0.5',
                         to: `${pos3D.x} ${pos3D.y} ${pos3D.z}`,
                         dur: 2000,
                         easing: 'easeOutExpo'
@@ -360,8 +360,8 @@
                     
                     model.setAttribute('animation__fullgrow', {
                         property: 'scale',
-                        from: '0.2 0.2 0.2',
-                        to: '0.4 0.4 0.4',
+                        from: '0.3 0.3 0.3',
+                        to: '0.9 0.9 0.9',
                         dur: 2000,
                         easing: 'easeOutElastic'
                     });
@@ -382,7 +382,7 @@
                     model.setAttribute('animation__float', {
                         property: 'position.y',
                         from: pos3D.y,
-                        to: pos3D.y + 0.2,
+                        to: pos3D.y + 0.6,
                         dur: 3000,
                         loop: true,
                         dir: 'alternate',
