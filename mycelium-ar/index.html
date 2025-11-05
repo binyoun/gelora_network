@@ -205,7 +205,7 @@
         let scene;
         
         // Distance in meters from user for models
-        const DISTANCE = 10;
+        const DISTANCE = 1;
         
         // Calculate GPS offset based on direction
         // Approximate: 1 degree latitude = 111,000 meters
@@ -310,52 +310,107 @@
             // Calculate GPS position
             const gpsPos = getGPSOffset(direction, userLat, userLon);
             
+            // Define 3D positions for each direction (x, y, z)
+            // These are relative positions in meters from the camera
+            const positions3D = {
+                north:     { x: 0,    y: 0.5,  z: -1.5 },
+                south:     { x: 0,    y: 0.5,  z: 1.5 },
+                east:      { x: 1.5,  y: 0.5,  z: 0 },
+                west:      { x: -1.5, y: 0.5,  z: 0 },
+                northeast: { x: 1.2,  y: 0.5,  z: -1.2 },
+                northwest: { x: -1.2, y: 0.5,  z: -1.2 },
+                southeast: { x: 1.2,  y: 0.5,  z: 1.2 },
+                southwest: { x: -1.2, y: 0.5,  z: 1.2 }
+            };
+            
+            const pos3D = positions3D[direction];
+            
             // Create model entity
             const model = document.createElement('a-entity');
             model.setAttribute('id', modelId);
             model.setAttribute('gltf-model', `./models/model${modelNum}.glb`);
             model.setAttribute('gps-entity-place', `latitude: ${gpsPos.lat}; longitude: ${gpsPos.lon};`);
+            
+            // Set initial position (center) and scale
+            model.setAttribute('position', '0 0 0');
             model.setAttribute('scale', '0 0 0');
             
             scene.appendChild(model);
             
             // Wait a moment for entity to be properly added
             setTimeout(() => {
-                // Growth animation
+                // Phase 1: Grow at center
                 model.setAttribute('animation__grow', {
                     property: 'scale',
                     from: '0 0 0',
-                    to: '0.7 0.7 0.7',
-                    dur: 2000,
-                    easing: 'easeOutElastic'
+                    to: '0.3 0.3 0.3',
+                    dur: 800,
+                    easing: 'easeOutQuad'
                 });
                 
-                // Rotation
-                model.setAttribute('animation__rotate', {
-                    property: 'rotation',
-                    to: '0 360 0',
-                    dur: 10000,
-                    loop: true,
-                    easing: 'linear'
-                });
+                // Phase 2: Move to direction position while continuing to grow
+                setTimeout(() => {
+                    model.setAttribute('animation__spread', {
+                        property: 'position',
+                        from: '0 0 0',
+                        to: `${pos3D.x} ${pos3D.y} ${pos3D.z}`,
+                        dur: 1500,
+                        easing: 'easeOutExpo'
+                    });
+                    
+                    model.setAttribute('animation__fullgrow', {
+                        property: 'scale',
+                        from: '0.3 0.3 0.3',
+                        to: '0.5 0.5 0.5',
+                        dur: 1500,
+                        easing: 'easeOutElastic'
+                    });
+                }, 800);
                 
-                // Floating
-                const baseY = 0;
-                model.setAttribute('animation__float', {
-                    property: 'position.y',
-                    from: baseY,
-                    to: baseY + 0.7,
-                    dur: 3000,
-                    loop: true,
-                    dir: 'alternate',
-                    easing: 'easeInOutSine'
-                });
+                // Phase 3: Add continuous animations after spreading
+                setTimeout(() => {
+                    // Rotation
+                    model.setAttribute('animation__rotate', {
+                        property: 'rotation',
+                        to: '0 360 0',
+                        dur: 10000,
+                        loop: true,
+                        easing: 'linear'
+                    });
+                    
+                    // Floating
+                    model.setAttribute('animation__float', {
+                        property: 'position.y',
+                        from: pos3D.y,
+                        to: pos3D.y + 0.3,
+                        dur: 3000,
+                        loop: true,
+                        dir: 'alternate',
+                        easing: 'easeInOutSine'
+                    });
+                }, 2300);
             }, 100);
         }
         
         function hideModel(modelId) {
             const model = document.getElementById(modelId);
             if (!model) return;
+            
+            // Get current position
+            const currentPos = model.getAttribute('position');
+            
+            // Remove ongoing animations
+            model.removeAttribute('animation__rotate');
+            model.removeAttribute('animation__float');
+            
+            // Move back to center
+            model.setAttribute('animation__return', {
+                property: 'position',
+                from: `${currentPos.x} ${currentPos.y} ${currentPos.z}`,
+                to: '0 0 0',
+                dur: 1000,
+                easing: 'easeInExpo'
+            });
             
             // Shrink animation
             model.setAttribute('animation__shrink', {
