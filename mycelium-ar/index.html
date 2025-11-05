@@ -153,7 +153,7 @@
         <h3>Mycelium Network</h3>
         <p>This AR experience uses your location.</p>
         <p>Walk around to see models in different directions.</p>
-        <p><small>Models will appear 1 meter away from you in 8 compass directions.</small></p>
+        <p><small>Models will appear around you at 0.8 meters in 8 compass directions.</small></p>
         <button onclick="startExperience()">Begin</button>
     </div>
     
@@ -205,7 +205,7 @@
         let scene;
         
         // Distance in meters from user for models
-        const DISTANCE = 1;
+        const DISTANCE = 0.8;
         
         // Calculate GPS offset based on direction
         // Approximate: 1 degree latitude = 111,000 meters
@@ -311,16 +311,16 @@
             const gpsPos = getGPSOffset(direction, userLat, userLon);
             
             // Define 3D positions for each direction (x, y, z)
-            // These are relative positions in meters from the camera
+            // Closer positions, lower height, more spread
             const positions3D = {
-                north:     { x: 0,    y: 0.5,  z: -1.5 },
-                south:     { x: 0,    y: 0.5,  z: 1.5 },
-                east:      { x: 1.5,  y: 0.5,  z: 0 },
-                west:      { x: -1.5, y: 0.5,  z: 0 },
-                northeast: { x: 1.2,  y: 0.5,  z: -1.2 },
-                northwest: { x: -1.2, y: 0.5,  z: -1.2 },
-                southeast: { x: 1.2,  y: 0.5,  z: 1.2 },
-                southwest: { x: -1.2, y: 0.5,  z: 1.2 }
+                north:     { x: 0,     y: 0,  z: -0.8 },
+                south:     { x: 0,     y: 0,  z: 0.8 },
+                east:      { x: 0.8,   y: 0,  z: 0 },
+                west:      { x: -0.8,  y: 0,  z: 0 },
+                northeast: { x: 0.6,   y: 0,  z: -0.6 },
+                northwest: { x: -0.6,  y: 0,  z: -0.6 },
+                southeast: { x: 0.6,   y: 0,  z: 0.6 },
+                southwest: { x: -0.6,  y: 0,  z: 0.6 }
             };
             
             const pos3D = positions3D[direction];
@@ -331,20 +331,20 @@
             model.setAttribute('gltf-model', `./models/model${modelNum}.glb`);
             model.setAttribute('gps-entity-place', `latitude: ${gpsPos.lat}; longitude: ${gpsPos.lon};`);
             
-            // Set initial position (center) and scale
-            model.setAttribute('position', '0 0 0');
+            // Set initial position (center, on ground) and scale
+            model.setAttribute('position', '0 0 -0.5');
             model.setAttribute('scale', '0 0 0');
             
             scene.appendChild(model);
             
             // Wait a moment for entity to be properly added
             setTimeout(() => {
-                // Phase 1: Grow at center
+                // Phase 1: Slow grow at center (like fungi emerging from soil)
                 model.setAttribute('animation__grow', {
                     property: 'scale',
                     from: '0 0 0',
-                    to: '0.5 0.5 0.5',
-                    dur: 800,
+                    to: '0.2 0.2 0.2',
+                    dur: 1800,
                     easing: 'easeOutQuad'
                 });
                 
@@ -352,20 +352,20 @@
                 setTimeout(() => {
                     model.setAttribute('animation__spread', {
                         property: 'position',
-                        from: '0 0 0',
+                        from: '0 0 -0.5',
                         to: `${pos3D.x} ${pos3D.y} ${pos3D.z}`,
-                        dur: 1500,
+                        dur: 2000,
                         easing: 'easeOutExpo'
                     });
                     
                     model.setAttribute('animation__fullgrow', {
                         property: 'scale',
-                        from: '0.5 0.5 0.5',
-                        to: '0.9 0.9 0.9',
-                        dur: 1500,
+                        from: '0.2 0.2 0.2',
+                        to: '0.4 0.4 0.4',
+                        dur: 2000,
                         easing: 'easeOutElastic'
                     });
-                }, 800);
+                }, 1800);
                 
                 // Phase 3: Add continuous animations after spreading
                 setTimeout(() => {
@@ -382,13 +382,13 @@
                     model.setAttribute('animation__float', {
                         property: 'position.y',
                         from: pos3D.y,
-                        to: pos3D.y + 0.7,
+                        to: pos3D.y + 0.2,
                         dur: 3000,
                         loop: true,
                         dir: 'alternate',
                         easing: 'easeInOutSine'
                     });
-                }, 2300);
+                }, 3800);
             }, 100);
         }
         
@@ -403,11 +403,11 @@
             model.removeAttribute('animation__rotate');
             model.removeAttribute('animation__float');
             
-            // Move back to center
+            // Move back to center (matching start position)
             model.setAttribute('animation__return', {
                 property: 'position',
                 from: `${currentPos.x} ${currentPos.y} ${currentPos.z}`,
-                to: '0 0 0',
+                to: '0 0 -0.5',
                 dur: 1000,
                 easing: 'easeInExpo'
             });
