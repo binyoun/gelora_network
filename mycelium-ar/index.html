@@ -2,367 +2,391 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Mycelium Network</title>
+    <title>Mycelium Network - Location AR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    
     <style>
-        body {
-            margin: 0;
+        body { 
+            margin: 0; 
             overflow: hidden;
-            font-family: 'Courier New', monospace;
-            background: #000;
+            font-family: Arial, sans-serif;
         }
         
-        #ui-overlay {
+        #arScene {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Compass overlay */
+        .compass-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1000;
+            z-index: 10;
         }
         
-        #intro-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            pointer-events: all;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        
-        #intro-screen h1 {
-            font-size: 2em;
-            margin-bottom: 30px;
-            letter-spacing: 3px;
-        }
-        
-        #intro-screen p {
-            font-size: 1.1em;
-            line-spacing: 1.6;
-            max-width: 400px;
-            margin: 15px 0;
-        }
-        
-        #start-button {
-            margin-top: 40px;
-            padding: 15px 40px;
-            font-size: 1.2em;
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            cursor: pointer;
-            letter-spacing: 2px;
-            transition: all 0.3s;
-        }
-        
-        #start-button:hover {
-            background: white;
-            color: black;
-        }
-        
-        .touch-zone {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            pointer-events: all;
-            cursor: pointer;
-        }
-        
+        /* Touch points positioned as compass */
         .touch-point {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            border: 2px solid rgba(255, 255, 255, 0.6);
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: all 0.4s ease;
-            backdrop-filter: blur(5px);
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            border: 2px solid rgba(255,255,255,0.5);
+            cursor: pointer;
+            pointer-events: all;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
         }
         
-        .touch-point::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
+        .touch-point:hover {
+            transform: scale(1.2);
+            background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 50%, transparent 70%);
+            box-shadow: 0 0 20px rgba(255,255,255,0.6);
+        }
+        
+        .touch-point.active {
             animation: pulse 2s infinite;
         }
         
-        .touch-point.touched {
-            width: 60px;
-            height: 60px;
-            border-color: rgba(255, 255, 255, 1);
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-        }
-        
-        .touch-point.touched::before {
-            width: 12px;
-            height: 12px;
-            animation: pulse-active 1s infinite;
-        }
-        
         @keyframes pulse {
-            0%, 100% { 
-                opacity: 0.6;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            50% { 
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1.3);
-            }
+            0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
         }
         
-        @keyframes pulse-active {
-            0%, 100% { 
-                opacity: 0.8;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            50% { 
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1.5);
-            }
+        /* Compass positions */
+        #north { top: 10%; left: 50%; transform: translateX(-50%); }
+        #south { bottom: 10%; left: 50%; transform: translateX(-50%); }
+        #east { right: 10%; top: 50%; transform: translateY(-50%); }
+        #west { left: 10%; top: 50%; transform: translateY(-50%); }
+        #northeast { top: 20%; right: 20%; }
+        #northwest { top: 20%; left: 20%; }
+        #southeast { bottom: 20%; right: 20%; }
+        #southwest { bottom: 20%; left: 20%; }
+        
+        /* Info panel */
+        .info-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 20;
+            backdrop-filter: blur(10px);
+            max-width: 80%;
         }
         
-        .mycelium-thread {
+        .info-panel h3 {
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        
+        .info-panel button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1em;
+            background: white;
+            color: black;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* GPS info display */
+        #gpsInfo {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            z-index: 15;
+        }
+        
+        /* Connection lines */
+        .mycelium-connection {
             position: absolute;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
             height: 2px;
-            background: linear-gradient(90deg, 
-                transparent, 
-                rgba(255, 255, 255, 0.4), 
-                transparent);
             transform-origin: left center;
             pointer-events: none;
+            animation: flow 3s linear infinite;
             opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: opacity 1s ease;
         }
         
-        .mycelium-thread.active {
+        .mycelium-connection.active {
             opacity: 1;
-            animation: flow 2s linear infinite;
         }
         
         @keyframes flow {
-            0% { background-position: 0% 0%; }
-            100% { background-position: 100% 0%; }
-        }
-        
-        #status {
-            position: fixed;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 1.2em;
-            text-align: center;
-            pointer-events: none;
-            letter-spacing: 2px;
-        }
-        
-        #counter {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: white;
-            font-size: 1.5em;
-            pointer-events: none;
-            letter-spacing: 3px;
+            0% { background-position: -100px 0; }
+            100% { background-position: 100px 0; }
         }
     </style>
 </head>
 <body>
-    <!-- Intro Screen -->
-    <div id="intro-screen">
-        <h1>MYCELIUM NETWORK</h1>
-        <p>You are the substrate</p>
-        <p>Touch to awaken the network</p>
-        <p>Connect all nodes</p>
-        <button id="start-button">BEGIN</button>
+    <!-- Info Panel -->
+    <div class="info-panel" id="infoPanel">
+        <h3>Mycelium Network</h3>
+        <p>This AR experience uses your location.</p>
+        <p>Walk around to see models in different directions.</p>
+        <p><small>Models will appear 1 meter away from you in 8 compass directions.</small></p>
+        <button onclick="startExperience()">Begin</button>
     </div>
-
-    <!-- UI Overlay -->
-    <div id="ui-overlay">
-        <div id="status">Touch to grow the network</div>
-        <div id="counter">0/8</div>
-        <div id="threads-container"></div>
-        
-        <!-- Touch zones positioned around screen -->
-        <div class="touch-zone" style="top: 15%; left: 50%; transform: translateX(-50%);">
-            <div class="touch-point" data-model="0"></div>
-        </div>
-        <div class="touch-zone" style="top: 35%; right: 10%;">
-            <div class="touch-point" data-model="1"></div>
-        </div>
-        <div class="touch-zone" style="top: 50%; right: 5%;">
-            <div class="touch-point" data-model="2"></div>
-        </div>
-        <div class="touch-zone" style="bottom: 25%; right: 15%;">
-            <div class="touch-point" data-model="3"></div>
-        </div>
-        <div class="touch-zone" style="bottom: 15%; left: 50%; transform: translateX(-50%);">
-            <div class="touch-point" data-model="4"></div>
-        </div>
-        <div class="touch-zone" style="bottom: 25%; left: 15%;">
-            <div class="touch-point" data-model="5"></div>
-        </div>
-        <div class="touch-zone" style="top: 50%; left: 5%;">
-            <div class="touch-point" data-model="6"></div>
-        </div>
-        <div class="touch-zone" style="top: 35%; left: 10%;">
-            <div class="touch-point" data-model="7"></div>
-        </div>
+    
+    <!-- GPS Info Display -->
+    <div id="gpsInfo" class="hidden">
+        <div>Lat: <span id="lat">-</span></div>
+        <div>Lon: <span id="lon">-</span></div>
+        <div>Active: <span id="activeCount">0</span>/8</div>
     </div>
-
-    <!-- A-Frame Scene -->
-    <a-scene 
-        embedded 
+    
+    <!-- AR Scene with GPS camera -->
+    <a-scene
+        id="arScene"
+        embedded
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
         vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false">
+        renderer="antialias: true; alpha: true">
         
-        <!-- Camera -->
-        <a-entity id="camera" camera position="0 0 0" look-controls="enabled: false"></a-entity>
+        <!-- GPS Camera Entity -->
+        <a-camera 
+            gps-camera 
+            rotation-reader
+            look-controls-enabled="false"
+            arjs-look-controls="smoothingFactor: 0.1">
+        </a-camera>
         
-        <!-- Assets -->
-        <a-assets>
-            <!-- Replace these with your actual GLB model paths -->
-            <a-asset-item id="model0" src="models/model1.glb"></a-asset-item>
-            <a-asset-item id="model1" src="models/model2.glb"></a-asset-item>
-            <a-asset-item id="model2" src="models/model3.glb"></a-asset-item>
-            <a-asset-item id="model3" src="models/model4.glb"></a-asset-item>
-            <a-asset-item id="model4" src="models/model5.glb"></a-asset-item>
-            <a-asset-item id="model5" src="models/model6.glb"></a-asset-item>
-            <a-asset-item id="model6" src="models/model7.glb"></a-asset-item>
-            <a-asset-item id="model7" src="models/model8.glb"></a-asset-item>
-        </a-assets>
-
-        <!-- Container for all models -->
-        <a-entity id="models-container"></a-entity>
+        <!-- Models will be added dynamically with gps-entity-place component -->
     </a-scene>
-
+    
+    <!-- Compass Touch Interface -->
+    <div class="compass-overlay">
+        <div class="touch-point" id="north" data-direction="north" data-model="1">N</div>
+        <div class="touch-point" id="east" data-direction="east" data-model="3">E</div>
+        <div class="touch-point" id="south" data-direction="south" data-model="5">S</div>
+        <div class="touch-point" id="west" data-direction="west" data-model="7">W</div>
+        <div class="touch-point" id="southwest" data-direction="southwest" data-model="2">SW</div>
+        <div class="touch-point" id="southeast" data-direction="southeast" data-model="4">SE</div>
+        <div class="touch-point" id="northwest" data-direction="northwest" data-model="6">NW</div>
+        <div class="touch-point" id="northeast" data-direction="northeast" data-model="8">NE</div>
+        
+        <!-- Mycelium connection lines -->
+        <div id="connections"></div>
+    </div>
+    
     <script>
-        let touchedCount = 0;
-        const totalModels = 8;
-        const models = [];
+        let activeModels = new Set();
+        let userLat = 0;
+        let userLon = 0;
+        let scene;
         
-        // Model positions in 3D space (circular arrangement)
-        const modelPositions = [
-            { x: 0, y: 1.5, z: -3 },      // North (top)
-            { x: 2, y: 0.8, z: -3 },      // Northeast
-            { x: 2.5, y: 0, z: -3 },      // East (right)
-            { x: 2, y: -1, z: -3 },       // Southeast
-            { x: 0, y: -1.5, z: -3 },     // South (bottom)
-            { x: -2, y: -1, z: -3 },      // Southwest
-            { x: -2.5, y: 0, z: -3 },     // West (left)
-            { x: -2, y: 0.8, z: -3 }      // Northwest
-        ];
-
-        // Start button
-        document.getElementById('start-button').addEventListener('click', () => {
-            document.getElementById('intro-screen').style.display = 'none';
-        });
-
-        // Touch interaction
-        const touchPoints = document.querySelectorAll('.touch-point');
-        const container = document.getElementById('models-container');
-        const threadsContainer = document.getElementById('threads-container');
+        // Distance in meters from user for models
+        const DISTANCE = 1;
         
-        touchPoints.forEach((point, index) => {
-            point.parentElement.addEventListener('click', () => {
-                if (!point.classList.contains('touched')) {
-                    point.classList.add('touched');
-                    touchedCount++;
-                    
-                    // Update counter
-                    document.getElementById('counter').textContent = `${touchedCount}/8`;
-                    
-                    // Spawn model
-                    spawnModel(index);
-                    
-                    // Update status
-                    if (touchedCount === 1) {
-                        document.getElementById('status').textContent = 'The network begins...';
-                    } else if (touchedCount === totalModels) {
-                        document.getElementById('status').textContent = 'Network complete';
-                    } else {
-                        document.getElementById('status').textContent = 'Growing...';
+        // Calculate GPS offset based on direction
+        // Approximate: 1 degree latitude = 111,000 meters
+        // 1 degree longitude varies by latitude
+        function getGPSOffset(direction, lat, lon) {
+            const latOffset = DISTANCE / 111000;
+            const lonOffset = DISTANCE / (111000 * Math.cos(lat * Math.PI / 180));
+            
+            const offsets = {
+                north:     { lat: lat + latOffset,    lon: lon },
+                south:     { lat: lat - latOffset,    lon: lon },
+                east:      { lat: lat,                lon: lon + lonOffset },
+                west:      { lat: lat,                lon: lon - lonOffset },
+                northeast: { lat: lat + latOffset*0.7, lon: lon + lonOffset*0.7 },
+                northwest: { lat: lat + latOffset*0.7, lon: lon - lonOffset*0.7 },
+                southeast: { lat: lat - latOffset*0.7, lon: lon + lonOffset*0.7 },
+                southwest: { lat: lat - latOffset*0.7, lon: lon - lonOffset*0.7 }
+            };
+            
+            return offsets[direction];
+        }
+        
+        function startExperience() {
+            document.getElementById('infoPanel').classList.add('hidden');
+            document.getElementById('gpsInfo').classList.remove('hidden');
+            
+            scene = document.querySelector('a-scene');
+            
+            // Get user's GPS location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLat = position.coords.latitude;
+                        userLon = position.coords.longitude;
+                        
+                        document.getElementById('lat').textContent = userLat.toFixed(6);
+                        document.getElementById('lon').textContent = userLon.toFixed(6);
+                        
+                        initializeTouchPoints();
+                    },
+                    (error) => {
+                        alert('GPS access required for this experience. Error: ' + error.message);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
                     }
-                    
-                    // Create threads to other active points
-                    updateThreads();
-                }
+                );
+                
+                // Watch position for updates
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        userLat = position.coords.latitude;
+                        userLon = position.coords.longitude;
+                        document.getElementById('lat').textContent = userLat.toFixed(6);
+                        document.getElementById('lon').textContent = userLon.toFixed(6);
+                    }
+                );
+            } else {
+                alert('GPS not supported by your device');
+            }
+        }
+        
+        function initializeTouchPoints() {
+            const touchPoints = document.querySelectorAll('.touch-point');
+            
+            touchPoints.forEach(point => {
+                point.addEventListener('click', (e) => {
+                    activateModel(e.target);
+                });
+                
+                point.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    activateModel(e.target);
+                });
             });
-        });
-
-        function spawnModel(index) {
-            const pos = modelPositions[index];
+        }
+        
+        function activateModel(touchPoint) {
+            const direction = touchPoint.dataset.direction;
+            const modelNum = touchPoint.dataset.model;
+            const modelId = `model-${direction}`;
+            
+            touchPoint.classList.toggle('active');
+            
+            if (activeModels.has(modelId)) {
+                hideModel(modelId);
+                activeModels.delete(modelId);
+                touchPoint.classList.remove('active');
+            } else {
+                showModel(direction, modelNum, modelId);
+                activeModels.add(modelId);
+                touchPoint.classList.add('active');
+            }
+            
+            document.getElementById('activeCount').textContent = activeModels.size;
+            updateConnections();
+        }
+        
+        function showModel(direction, modelNum, modelId) {
+            // Calculate GPS position
+            const gpsPos = getGPSOffset(direction, userLat, userLon);
             
             // Create model entity
             const model = document.createElement('a-entity');
-            model.setAttribute('gltf-model', `#model${index}`);
-            model.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
-            model.setAttribute('scale', '0.01 0.01 0.01');
+            model.setAttribute('id', modelId);
+            model.setAttribute('gltf-model', `./models/model${modelNum}.glb`);
+            model.setAttribute('gps-entity-place', `latitude: ${gpsPos.lat}; longitude: ${gpsPos.lon};`);
+            model.setAttribute('scale', '0 0 0');
             
-            // Growth animation
-            model.setAttribute('animation', {
-                property: 'scale',
-                to: '0.5 0.5 0.5',
-                dur: 2000,
-                easing: 'easeOutElastic'
-            });
+            scene.appendChild(model);
             
-            // Rotation animation
-            model.setAttribute('animation__rotate', {
-                property: 'rotation',
-                to: '0 360 0',
-                dur: 20000,
-                loop: true,
-                easing: 'linear'
-            });
-            
-            // Floating animation
-            model.setAttribute('animation__float', {
-                property: 'position',
-                to: `${pos.x} ${pos.y + 0.3} ${pos.z}`,
-                dur: 3000,
-                dir: 'alternate',
-                loop: true,
-                easing: 'easeInOutSine'
-            });
-            
-            container.appendChild(model);
-            models[index] = { element: model, position: pos };
+            // Wait a moment for entity to be properly added
+            setTimeout(() => {
+                // Growth animation
+                model.setAttribute('animation__grow', {
+                    property: 'scale',
+                    from: '0 0 0',
+                    to: '0.5 0.5 0.5',
+                    dur: 2000,
+                    easing: 'easeOutElastic'
+                });
+                
+                // Rotation
+                model.setAttribute('animation__rotate', {
+                    property: 'rotation',
+                    to: '0 360 0',
+                    dur: 10000,
+                    loop: true,
+                    easing: 'linear'
+                });
+                
+                // Floating
+                const baseY = 0;
+                model.setAttribute('animation__float', {
+                    property: 'position.y',
+                    from: baseY,
+                    to: baseY + 0.3,
+                    dur: 3000,
+                    loop: true,
+                    dir: 'alternate',
+                    easing: 'easeInOutSine'
+                });
+            }, 100);
         }
-
-        function updateThreads() {
-            // Clear existing threads
-            threadsContainer.innerHTML = '';
+        
+        function hideModel(modelId) {
+            const model = document.getElementById(modelId);
+            if (!model) return;
             
-            // Create threads between all touched points
-            const touchedPoints = Array.from(touchPoints).filter(p => p.classList.contains('touched'));
+            // Shrink animation
+            model.setAttribute('animation__shrink', {
+                property: 'scale',
+                to: '0 0 0',
+                dur: 1000,
+                easing: 'easeInQuad'
+            });
             
-            for (let i = 0; i < touchedPoints.length; i++) {
-                for (let j = i + 1; j < touchedPoints.length; j++) {
-                    createThread(touchedPoints[i], touchedPoints[j]);
+            // Remove after animation
+            setTimeout(() => {
+                if (model && model.parentNode) {
+                    model.parentNode.removeChild(model);
+                }
+            }, 1000);
+        }
+        
+        function updateConnections() {
+            const container = document.getElementById('connections');
+            container.innerHTML = '';
+            
+            const activePoints = document.querySelectorAll('.touch-point.active');
+            
+            for (let i = 0; i < activePoints.length; i++) {
+                for (let j = i + 1; j < activePoints.length; j++) {
+                    createConnection(activePoints[i], activePoints[j]);
                 }
             }
         }
-
-        function createThread(point1, point2) {
+        
+        function createConnection(point1, point2) {
             const rect1 = point1.getBoundingClientRect();
             const rect2 = point2.getBoundingClientRect();
             
@@ -374,27 +398,19 @@
             const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
             const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
             
-            const thread = document.createElement('div');
-            thread.className = 'mycelium-thread';
-            thread.style.width = distance + 'px';
-            thread.style.left = x1 + 'px';
-            thread.style.top = y1 + 'px';
-            thread.style.transform = `rotate(${angle}deg)`;
+            const connection = document.createElement('div');
+            connection.className = 'mycelium-connection';
+            connection.style.width = distance + 'px';
+            connection.style.left = x1 + 'px';
+            connection.style.top = y1 + 'px';
+            connection.style.transform = `rotate(${angle}deg)`;
             
-            threadsContainer.appendChild(thread);
+            document.getElementById('connections').appendChild(connection);
             
-            // Activate with delay
             setTimeout(() => {
-                thread.classList.add('active');
-            }, 100);
+                connection.classList.add('active');
+            }, 10);
         }
-
-        // Update threads on window resize
-        window.addEventListener('resize', () => {
-            if (touchedCount > 1) {
-                updateThreads();
-            }
-        });
     </script>
 </body>
 </html>
