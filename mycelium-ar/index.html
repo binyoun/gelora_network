@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Mycelium Network - Location AR</title>
+    <title>Mycelium Network - GPS Waypoints</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
@@ -14,81 +14,157 @@
             font-family: Arial, sans-serif;
         }
         
-        #arScene {
+        /* GPS & Compass Info - Top Right */
+        #locationInfo {
             position: fixed;
-            width: 100%;
-            height: 100%;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            z-index: 20;
+            min-width: 200px;
         }
         
-        /* Compass overlay */
-        .compass-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
+        #locationInfo .label {
+            color: #aaa;
+            font-size: 10px;
+            margin-top: 8px;
         }
         
-        /* Touch points positioned as compass */
-        .touch-point {
-            position: absolute;
-            width: 60px;
-            height: 60px;
+        #locationInfo .value {
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        #compass {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 24px;
+            color: #4CAF50;
+        }
+        
+        /* Compass Visual - Center Top */
+        #compassVisual {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 200px;
+            z-index: 15;
+        }
+        
+        .compass-circle {
+            width: 100%;
+            height: 100%;
+            border: 3px solid rgba(255,255,255,0.5);
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            position: relative;
+            background: radial-gradient(circle, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 100%);
+        }
+        
+        .compass-needle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 80px;
+            background: linear-gradient(180deg, red 0%, red 50%, white 50%, white 100%);
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .compass-direction {
+            position: absolute;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 5px black;
+        }
+        
+        .compass-direction.active {
+            color: #4CAF50;
+            font-size: 20px;
+            text-shadow: 0 0 10px #4CAF50;
+        }
+        
+        #compassN { top: 5px; left: 50%; transform: translateX(-50%); }
+        #compassE { top: 50%; right: 5px; transform: translateY(-50%); }
+        #compassS { bottom: 5px; left: 50%; transform: translateX(-50%); }
+        #compassW { top: 50%; left: 5px; transform: translateY(-50%); }
+        #compassNE { top: 20px; right: 20px; font-size: 12px; }
+        #compassSE { bottom: 20px; right: 20px; font-size: 12px; }
+        #compassSW { bottom: 20px; left: 20px; font-size: 12px; }
+        #compassNW { top: 20px; left: 20px; font-size: 12px; }
+        
+        /* Waypoint Status - Bottom */
+        #waypointStatus {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 20px;
+            z-index: 20;
+            text-align: center;
+        }
+        
+        .waypoint-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .waypoint-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
             border: 2px solid rgba(255,255,255,0.5);
-            cursor: pointer;
-            pointer-events: all;
-            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 10px;
-            color: white;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            transition: all 0.3s;
         }
         
-        .touch-point:hover {
-            transform: scale(1.2);
-            background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 50%, transparent 70%);
-            box-shadow: 0 0 20px rgba(255,255,255,0.6);
+        .waypoint-dot.found {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            box-shadow: 0 0 20px #4CAF50;
         }
         
-        .touch-point.active {
-            animation: pulse 2s infinite;
+        .waypoint-dot.near {
+            background: rgba(255, 193, 7, 0.5);
+            border-color: #FFC107;
+            animation: pulse 1s infinite;
         }
         
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
-            70% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
-            100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
         
-        /* Compass positions */
-        #north { top: 10%; left: 50%; transform: translateX(-50%); }
-        #south { bottom: 10%; left: 50%; transform: translateX(-50%); }
-        #east { right: 10%; top: 50%; transform: translateY(-50%); }
-        #west { left: 10%; top: 50%; transform: translateY(-50%); }
-        #northeast { top: 20%; right: 20%; }
-        #northwest { top: 20%; left: 20%; }
-        #southeast { bottom: 20%; right: 20%; }
-        #southwest { bottom: 20%; left: 20%; }
-        
-        /* Info panel */
+        /* Info Panel */
         .info-panel {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             color: white;
             padding: 30px;
             border-radius: 20px;
             text-align: center;
-            z-index: 20;
-            backdrop-filter: blur(10px);
+            z-index: 30;
             max-width: 80%;
         }
         
@@ -112,59 +188,140 @@
             display: none;
         }
         
-        /* GPS info display */
-        #gpsInfo {
+        /* Setup panel for GPS configuration */
+        #setupPanel {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
             color: white;
-            padding: 10px;
+            padding: 30px;
+            border-radius: 20px;
+            z-index: 30;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+        
+        #setupPanel input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 5px;
+        }
+        
+        #setupPanel button {
+            margin: 10px 5px;
+            padding: 10px 20px;
+            background: white;
+            color: black;
+            border: none;
             border-radius: 10px;
-            font-size: 12px;
-            z-index: 15;
-        }
-        
-        /* Connection lines */
-        .mycelium-connection {
-            position: absolute;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            height: 2px;
-            transform-origin: left center;
-            pointer-events: none;
-            animation: flow 3s linear infinite;
-            opacity: 0;
-            transition: opacity 1s ease;
-        }
-        
-        .mycelium-connection.active {
-            opacity: 1;
-        }
-        
-        @keyframes flow {
-            0% { background-position: -100px 0; }
-            100% { background-position: 100px 0; }
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <!-- Info Panel -->
-    <div class="info-panel" id="infoPanel">
-        <h3>Mycelium Network</h3>
-        <p>This AR experience uses your location.</p>
-        <p>Walk around to see models in different directions.</p>
-        <p><small>Models will appear around you at 0.8 meters in 8 compass directions.</small></p>
-        <button onclick="startExperience()">Begin</button>
+    <!-- Setup Panel -->
+    <div id="setupPanel">
+        <h3>Setup GPS Waypoints</h3>
+        <p>Set 8 GPS locations where each model will appear.</p>
+        
+        <button onclick="useCurrentLocation()">Use My Current Location as Center</button>
+        <button onclick="useCustomLocations()">Enter Custom Locations</button>
+        
+        <div id="customInputs" class="hidden">
+            <p><small>Enter latitude, longitude for each direction:</small></p>
+            <div>
+                <strong>North:</strong><br>
+                <input type="text" id="lat_north" placeholder="Latitude">
+                <input type="text" id="lon_north" placeholder="Longitude">
+            </div>
+            <div>
+                <strong>Northeast:</strong><br>
+                <input type="text" id="lat_northeast" placeholder="Latitude">
+                <input type="text" id="lon_northeast" placeholder="Longitude">
+            </div>
+            <div>
+                <strong>East:</strong><br>
+                <input type="text" id="lat_east" placeholder="Latitude">
+                <input type="text" id="lon_east" placeholder="Longitude">
+            </div>
+            <div>
+                <strong>Southeast:</strong><br>
+                <input type="text" id="lat_southeast" placeholder="Latitude">
+                <input type="text" id="lon_southeast" placeholder="Longitude">
+            </div>
+            <div>
+                <strong>South:</strong><br>
+                <input type="text" id="lat_south" placeholder="Latitude">
+                <input type="text" id="lon_south" placeholder="Longitude">
+            </div>
+            <div>
+                <strong>Southwest:</strong><br>
+                <input type="text" id="lat_southwest" placeholder="Latitude">
+                <input type="text" id="lon_southwest" placeholder="Longitude">
+            </div>
+            <div>
+                <strong>West:</strong><br>
+                <input type="text" id="lat_west" placeholder="Latitude">
+                <input type="text" id="lon_west" placeholder="Longitude">
+            </div>
+            <div>
+                <strong>Northwest:</strong><br>
+                <input type="text" id="lat_northwest" placeholder="Latitude">
+                <input type="text" id="lon_northwest" placeholder="Longitude">
+            </div>
+            <button onclick="saveCustomLocations()">Save and Start</button>
+        </div>
     </div>
     
-    <!-- GPS Info Display -->
-    <div id="gpsInfo" class="hidden">
-        <div>Lat: <span id="lat">-</span></div>
-        <div>Lon: <span id="lon">-</span></div>
-        <div>Active: <span id="activeCount">0</span>/8</div>
+    <!-- Location Info - Top Right -->
+    <div id="locationInfo" class="hidden">
+        <div class="label">Your Location</div>
+        <div class="value"><span id="userLat">-</span></div>
+        <div class="value"><span id="userLon">-</span></div>
+        <div class="label" style="margin-top: 15px;">Heading</div>
+        <div id="compass">-</div>
+        <div class="label" style="margin-top: 15px;">Found</div>
+        <div class="value"><span id="foundCount">0</span>/8</div>
     </div>
     
-    <!-- AR Scene with GPS camera -->
+    <!-- Compass Visual - Center Top -->
+    <div id="compassVisual" class="hidden">
+        <div class="compass-circle">
+            <div class="compass-needle" id="needle"></div>
+            <div class="compass-direction" id="compassN">N</div>
+            <div class="compass-direction" id="compassNE">NE</div>
+            <div class="compass-direction" id="compassE">E</div>
+            <div class="compass-direction" id="compassSE">SE</div>
+            <div class="compass-direction" id="compassS">S</div>
+            <div class="compass-direction" id="compassSW">SW</div>
+            <div class="compass-direction" id="compassW">W</div>
+            <div class="compass-direction" id="compassNW">NW</div>
+        </div>
+    </div>
+    
+    <!-- Waypoint Status - Bottom -->
+    <div id="waypointStatus" class="hidden">
+        <div style="font-size: 14px; margin-bottom: 5px;">Mycelium Network</div>
+        <div class="waypoint-grid">
+            <div class="waypoint-dot" data-direction="north">N</div>
+            <div class="waypoint-dot" data-direction="northeast">NE</div>
+            <div class="waypoint-dot" data-direction="east">E</div>
+            <div class="waypoint-dot" data-direction="southeast">SE</div>
+            <div class="waypoint-dot" data-direction="south">S</div>
+            <div class="waypoint-dot" data-direction="southwest">SW</div>
+            <div class="waypoint-dot" data-direction="west">W</div>
+            <div class="waypoint-dot" data-direction="northwest">NW</div>
+        </div>
+    </div>
+    
+    <!-- AR Scene -->
     <a-scene
         id="arScene"
         embedded
@@ -172,82 +329,55 @@
         vr-mode-ui="enabled: false"
         renderer="antialias: true; alpha: true">
         
-        <!-- GPS Camera Entity -->
         <a-camera 
             gps-camera 
             rotation-reader
             look-controls-enabled="false"
             arjs-look-controls="smoothingFactor: 0.1">
         </a-camera>
-        
-        <!-- Models will be added dynamically with gps-entity-place component -->
     </a-scene>
     
-    <!-- Compass Touch Interface -->
-    <div class="compass-overlay">
-        <div class="touch-point" id="north" data-direction="north" data-model="1">N</div>
-        <div class="touch-point" id="east" data-direction="east" data-model="3">E</div>
-        <div class="touch-point" id="south" data-direction="south" data-model="5">S</div>
-        <div class="touch-point" id="west" data-direction="west" data-model="7">W</div>
-        <div class="touch-point" id="southwest" data-direction="southwest" data-model="2">SW</div>
-        <div class="touch-point" id="southeast" data-direction="southeast" data-model="4">SE</div>
-        <div class="touch-point" id="northwest" data-direction="northwest" data-model="6">NW</div>
-        <div class="touch-point" id="northeast" data-direction="northeast" data-model="8">NE</div>
-        
-        <!-- Mycelium connection lines -->
-        <div id="connections"></div>
-    </div>
-    
     <script>
-        let activeModels = new Set();
         let userLat = 0;
         let userLon = 0;
+        let userHeading = 0;
         let scene;
+        let foundModels = new Set();
+        let activeModels = new Set();
         
-        // Distance in meters from user for models
-        const DISTANCE = 1.8;
+        // GPS waypoints for each direction (will be set during setup)
+        let waypoints = {};
         
-        // Calculate GPS offset based on direction
-        // Approximate: 1 degree latitude = 111,000 meters
-        // 1 degree longitude varies by latitude
-        function getGPSOffset(direction, lat, lon) {
-            const latOffset = DISTANCE / 111000;
-            const lonOffset = DISTANCE / (111000 * Math.cos(lat * Math.PI / 180));
-            
-            const offsets = {
-                north:     { lat: lat + latOffset,    lon: lon },
-                south:     { lat: lat - latOffset,    lon: lon },
-                east:      { lat: lat,                lon: lon + lonOffset },
-                west:      { lat: lat,                lon: lon - lonOffset },
-                northeast: { lat: lat + latOffset*0.7, lon: lon + lonOffset*0.7 },
-                northwest: { lat: lat + latOffset*0.7, lon: lon - lonOffset*0.7 },
-                southeast: { lat: lat - latOffset*0.7, lon: lon + lonOffset*0.7 },
-                southwest: { lat: lat - latOffset*0.7, lon: lon - lonOffset*0.7 }
-            };
-            
-            return offsets[direction];
-        }
+        // Proximity threshold in meters
+        const PROXIMITY_THRESHOLD = 10; // Model appears when within 10 meters
+        const NEAR_THRESHOLD = 20; // "Near" indicator when within 20 meters
         
-        function startExperience() {
-            document.getElementById('infoPanel').classList.add('hidden');
-            document.getElementById('gpsInfo').classList.remove('hidden');
-            
-            scene = document.querySelector('a-scene');
-            
-            // Get user's GPS location
+        // Model mapping
+        const modelMapping = {
+            north: { num: 1, position: { x: 0, y: 0, z: -0.8 } },
+            northeast: { num: 8, position: { x: 0.6, y: 0, z: -0.6 } },
+            east: { num: 3, position: { x: 0.8, y: 0, z: 0 } },
+            southeast: { num: 4, position: { x: 0.6, y: 0, z: 0.6 } },
+            south: { num: 5, position: { x: 0, y: 0, z: 0.8 } },
+            southwest: { num: 2, position: { x: -0.6, y: 0, z: 0.6 } },
+            west: { num: 7, position: { x: -0.8, y: 0, z: 0 } },
+            northwest: { num: 6, position: { x: -0.6, y: 0, z: -0.6 } }
+        };
+        
+        function useCurrentLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        userLat = position.coords.latitude;
-                        userLon = position.coords.longitude;
+                        const centerLat = position.coords.latitude;
+                        const centerLon = position.coords.longitude;
                         
-                        document.getElementById('lat').textContent = userLat.toFixed(6);
-                        document.getElementById('lon').textContent = userLon.toFixed(6);
+                        // Generate waypoints 15 meters away in each direction
+                        waypoints = generateWaypoints(centerLat, centerLon, 15);
                         
-                        initializeTouchPoints();
+                        startExperience();
                     },
                     (error) => {
-                        alert('GPS access required for this experience. Error: ' + error.message);
+                        alert('GPS access required. Error: ' + error.message);
                     },
                     {
                         enableHighAccuracy: true,
@@ -255,104 +385,212 @@
                         maximumAge: 0
                     }
                 );
-                
-                // Watch position for updates
+            }
+        }
+        
+        function useCustomLocations() {
+            document.getElementById('customInputs').classList.remove('hidden');
+        }
+        
+        function saveCustomLocations() {
+            waypoints = {
+                north: {
+                    lat: parseFloat(document.getElementById('lat_north').value),
+                    lon: parseFloat(document.getElementById('lon_north').value)
+                },
+                northeast: {
+                    lat: parseFloat(document.getElementById('lat_northeast').value),
+                    lon: parseFloat(document.getElementById('lon_northeast').value)
+                },
+                east: {
+                    lat: parseFloat(document.getElementById('lat_east').value),
+                    lon: parseFloat(document.getElementById('lon_east').value)
+                },
+                southeast: {
+                    lat: parseFloat(document.getElementById('lat_southeast').value),
+                    lon: parseFloat(document.getElementById('lon_southeast').value)
+                },
+                south: {
+                    lat: parseFloat(document.getElementById('lat_south').value),
+                    lon: parseFloat(document.getElementById('lon_south').value)
+                },
+                southwest: {
+                    lat: parseFloat(document.getElementById('lat_southwest').value),
+                    lon: parseFloat(document.getElementById('lon_southwest').value)
+                },
+                west: {
+                    lat: parseFloat(document.getElementById('lat_west').value),
+                    lon: parseFloat(document.getElementById('lon_west').value)
+                },
+                northwest: {
+                    lat: parseFloat(document.getElementById('lat_northwest').value),
+                    lon: parseFloat(document.getElementById('lon_northwest').value)
+                }
+            };
+            
+            startExperience();
+        }
+        
+        function generateWaypoints(centerLat, centerLon, distance) {
+            const latOffset = distance / 111000;
+            const lonOffset = distance / (111000 * Math.cos(centerLat * Math.PI / 180));
+            
+            return {
+                north:     { lat: centerLat + latOffset,          lon: centerLon },
+                northeast: { lat: centerLat + latOffset * 0.7,    lon: centerLon + lonOffset * 0.7 },
+                east:      { lat: centerLat,                      lon: centerLon + lonOffset },
+                southeast: { lat: centerLat - latOffset * 0.7,    lon: centerLon + lonOffset * 0.7 },
+                south:     { lat: centerLat - latOffset,          lon: centerLon },
+                southwest: { lat: centerLat - latOffset * 0.7,    lon: centerLon - lonOffset * 0.7 },
+                west:      { lat: centerLat,                      lon: centerLon - lonOffset },
+                northwest: { lat: centerLat + latOffset * 0.7,    lon: centerLon - lonOffset * 0.7 }
+            };
+        }
+        
+        function startExperience() {
+            document.getElementById('setupPanel').classList.add('hidden');
+            document.getElementById('locationInfo').classList.remove('hidden');
+            document.getElementById('compassVisual').classList.remove('hidden');
+            document.getElementById('waypointStatus').classList.remove('hidden');
+            
+            scene = document.querySelector('a-scene');
+            
+            // Watch user position and heading
+            if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(
                     (position) => {
                         userLat = position.coords.latitude;
                         userLon = position.coords.longitude;
-                        document.getElementById('lat').textContent = userLat.toFixed(6);
-                        document.getElementById('lon').textContent = userLon.toFixed(6);
+                        
+                        document.getElementById('userLat').textContent = userLat.toFixed(6);
+                        document.getElementById('userLon').textContent = userLon.toFixed(6);
+                        
+                        checkProximity();
+                    },
+                    null,
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 0
                     }
                 );
-            } else {
-                alert('GPS not supported by your device');
+            }
+            
+            // Watch device orientation for compass
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', handleOrientation);
             }
         }
         
-        function initializeTouchPoints() {
-            const touchPoints = document.querySelectorAll('.touch-point');
-            
-            touchPoints.forEach(point => {
-                point.addEventListener('click', (e) => {
-                    activateModel(e.target);
-                });
+        function handleOrientation(event) {
+            if (event.alpha !== null) {
+                userHeading = event.alpha;
                 
-                point.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    activateModel(e.target);
-                });
+                // Update compass needle
+                document.getElementById('needle').style.transform = 
+                    `translate(-50%, -100%) rotate(${userHeading}deg)`;
+                
+                // Update compass text
+                const direction = getCompassDirection(userHeading);
+                document.getElementById('compass').textContent = direction;
+                
+                // Highlight active direction
+                updateCompassHighlight(direction);
+            }
+        }
+        
+        function getCompassDirection(heading) {
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round(heading / 45) % 8;
+            return directions[index];
+        }
+        
+        function updateCompassHighlight(direction) {
+            // Remove all active classes
+            document.querySelectorAll('.compass-direction').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Add active to current direction
+            const dirMap = {
+                'N': 'compassN', 'NE': 'compassNE', 'E': 'compassE', 'SE': 'compassSE',
+                'S': 'compassS', 'SW': 'compassSW', 'W': 'compassW', 'NW': 'compassNW'
+            };
+            
+            if (dirMap[direction]) {
+                document.getElementById(dirMap[direction]).classList.add('active');
+            }
+        }
+        
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // Earth's radius in meters
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function checkProximity() {
+            Object.keys(waypoints).forEach(direction => {
+                const waypoint = waypoints[direction];
+                const distance = calculateDistance(userLat, userLon, waypoint.lat, waypoint.lon);
+                
+                const dot = document.querySelector(`.waypoint-dot[data-direction="${direction}"]`);
+                
+                if (distance <= PROXIMITY_THRESHOLD && !foundModels.has(direction)) {
+                    // Found! Show model
+                    foundModels.add(direction);
+                    dot.classList.add('found');
+                    dot.classList.remove('near');
+                    showModel(direction);
+                    
+                    document.getElementById('foundCount').textContent = foundModels.size;
+                } else if (distance <= NEAR_THRESHOLD && !foundModels.has(direction)) {
+                    // Near
+                    dot.classList.add('near');
+                } else {
+                    // Far
+                    dot.classList.remove('near');
+                }
             });
         }
         
-        function activateModel(touchPoint) {
-            const direction = touchPoint.dataset.direction;
-            const modelNum = touchPoint.dataset.model;
+        function showModel(direction) {
+            const mapping = modelMapping[direction];
             const modelId = `model-${direction}`;
             
-            touchPoint.classList.toggle('active');
+            if (activeModels.has(modelId)) return;
             
-            if (activeModels.has(modelId)) {
-                hideModel(modelId);
-                activeModels.delete(modelId);
-                touchPoint.classList.remove('active');
-            } else {
-                showModel(direction, modelNum, modelId);
-                activeModels.add(modelId);
-                touchPoint.classList.add('active');
-            }
+            const waypoint = waypoints[direction];
+            const pos3D = mapping.position;
             
-            document.getElementById('activeCount').textContent = activeModels.size;
-            updateConnections();
-        }
-        
-        function showModel(direction, modelNum, modelId) {
-            // Calculate GPS position
-            const gpsPos = getGPSOffset(direction, userLat, userLon);
-            
-            // Define 3D positions for each direction (x, y, z)
-            // Closer positions, lower height, more spread
-            const positions3D = {
-                north:     { x: 1,     y: 0,  z: 0.8 },
-                south:     { x: 1,     y: 0,  z: 1.8 },
-                east:      { x: 0.8,   y: 0,  z: 0 },
-                west:      { x: -1.8,  y: 0,  z: 0 },
-                northeast: { x: 0.6,   y: 0,  z: 0.6 },
-                northwest: { x: -1.6,  y: 0,  z: 0.6 },
-                southeast: { x: 1.6,   y: 0,  z: 1.6 },
-                southwest: { x: -1.6,  y: 0,  z: 1.6 }
-            };
-            
-            const pos3D = positions3D[direction];
-            
-            // Create model entity
+            // Create model
             const model = document.createElement('a-entity');
             model.setAttribute('id', modelId);
-            model.setAttribute('gltf-model', `./models/model${modelNum}.glb`);
-            model.setAttribute('gps-entity-place', `latitude: ${gpsPos.lat}; longitude: ${gpsPos.lon};`);
-            
-            // Set initial position (center, on ground) and scale
-            model.setAttribute('position', '0 0 0.3');
+            model.setAttribute('gltf-model', `./models/model${mapping.num}.glb`);
+            model.setAttribute('gps-entity-place', `latitude: ${waypoint.lat}; longitude: ${waypoint.lon};`);
+            model.setAttribute('position', '0 0 -0.5');
             model.setAttribute('scale', '0 0 0');
             
             scene.appendChild(model);
+            activeModels.add(modelId);
             
-            // Wait a moment for entity to be properly added
+            // Animate
             setTimeout(() => {
-                // Phase 1: Slow grow at center (like fungi emerging from soil)
                 model.setAttribute('animation__grow', {
                     property: 'scale',
                     from: '0 0 0',
-                    to: '0.3 0.3 0.3',
+                    to: '0.2 0.2 0.2',
                     dur: 1800,
                     easing: 'easeOutQuad'
                 });
                 
-                // Phase 2: Move to direction position while continuing to grow
                 setTimeout(() => {
                     model.setAttribute('animation__spread', {
                         property: 'position',
-                        from: '0 0 0.5',
+                        from: '0 0 -0.5',
                         to: `${pos3D.x} ${pos3D.y} ${pos3D.z}`,
                         dur: 2000,
                         easing: 'easeOutExpo'
@@ -360,16 +598,14 @@
                     
                     model.setAttribute('animation__fullgrow', {
                         property: 'scale',
-                        from: '0.3 0.3 0.3',
-                        to: '0.6 0.6 0.6',
+                        from: '0.2 0.2 0.2',
+                        to: '0.4 0.4 0.4',
                         dur: 2000,
                         easing: 'easeOutElastic'
                     });
                 }, 1800);
                 
-                // Phase 3: Add continuous animations after spreading
                 setTimeout(() => {
-                    // Rotation
                     model.setAttribute('animation__rotate', {
                         property: 'rotation',
                         to: '0 360 0',
@@ -378,11 +614,10 @@
                         easing: 'linear'
                     });
                     
-                    // Floating
                     model.setAttribute('animation__float', {
                         property: 'position.y',
                         from: pos3D.y,
-                        to: pos3D.y + 0.5,
+                        to: pos3D.y + 0.2,
                         dur: 3000,
                         loop: true,
                         dir: 'alternate',
@@ -390,81 +625,6 @@
                     });
                 }, 3800);
             }, 100);
-        }
-        
-        function hideModel(modelId) {
-            const model = document.getElementById(modelId);
-            if (!model) return;
-            
-            // Get current position
-            const currentPos = model.getAttribute('position');
-            
-            // Remove ongoing animations
-            model.removeAttribute('animation__rotate');
-            model.removeAttribute('animation__float');
-            
-            // Move back to center (matching start position)
-            model.setAttribute('animation__return', {
-                property: 'position',
-                from: `${currentPos.x} ${currentPos.y} ${currentPos.z}`,
-                to: '0 0 -0.5',
-                dur: 1000,
-                easing: 'easeInExpo'
-            });
-            
-            // Shrink animation
-            model.setAttribute('animation__shrink', {
-                property: 'scale',
-                to: '0 0 0',
-                dur: 1000,
-                easing: 'easeInQuad'
-            });
-            
-            // Remove after animation
-            setTimeout(() => {
-                if (model && model.parentNode) {
-                    model.parentNode.removeChild(model);
-                }
-            }, 1000);
-        }
-        
-        function updateConnections() {
-            const container = document.getElementById('connections');
-            container.innerHTML = '';
-            
-            const activePoints = document.querySelectorAll('.touch-point.active');
-            
-            for (let i = 0; i < activePoints.length; i++) {
-                for (let j = i + 1; j < activePoints.length; j++) {
-                    createConnection(activePoints[i], activePoints[j]);
-                }
-            }
-        }
-        
-        function createConnection(point1, point2) {
-            const rect1 = point1.getBoundingClientRect();
-            const rect2 = point2.getBoundingClientRect();
-            
-            const x1 = rect1.left + rect1.width / 2;
-            const y1 = rect1.top + rect1.height / 2;
-            const x2 = rect2.left + rect2.width / 2;
-            const y2 = rect2.top + rect2.height / 2;
-            
-            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-            const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
-            
-            const connection = document.createElement('div');
-            connection.className = 'mycelium-connection';
-            connection.style.width = distance + 'px';
-            connection.style.left = x1 + 'px';
-            connection.style.top = y1 + 'px';
-            connection.style.transform = `rotate(${angle}deg)`;
-            
-            document.getElementById('connections').appendChild(connection);
-            
-            setTimeout(() => {
-                connection.classList.add('active');
-            }, 10);
         }
     </script>
 </body>
