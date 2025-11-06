@@ -349,8 +349,8 @@
         let waypoints = {};
         
         // Proximity threshold in meters
-        const PROXIMITY_THRESHOLD = 10; // Model appears when within 10 meters
-        const NEAR_THRESHOLD = 20; // "Near" indicator when within 20 meters
+        const PROXIMITY_THRESHOLD = 0.5; // Model appears when within 10 meters
+        const NEAR_THRESHOLD = 1; // "Near" indicator when within 20 meters
         
         // Model mapping
         const modelMapping = {
@@ -371,8 +371,8 @@
                         const centerLat = position.coords.latitude;
                         const centerLon = position.coords.longitude;
                         
-                        // Generate waypoints 15 meters away in each direction
-                        waypoints = generateWaypoints(centerLat, centerLon, 15);
+                        // Generate waypoints 2.5 meters away in each direction
+                        waypoints = generateWaypoints(centerLat, centerLon, 2.5);
                         
                         startExperience();
                     },
