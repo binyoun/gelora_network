@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Mycelium Network - Location AR</title>
+    <title>Gelora Mycelium Network Overview</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
@@ -11,7 +11,7 @@
         body { 
             margin: 0; 
             overflow: hidden;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
         #arScene {
@@ -31,11 +31,11 @@
             z-index: 10;
         }
         
-        /* Touch points positioned as compass */
+        /* Touch points positioned as compass with trigram info */
         .touch-point {
             position: absolute;
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, transparent 70%);
             border: 2px solid rgba(255,255,255,0.5);
@@ -43,11 +43,22 @@
             pointer-events: all;
             transition: all 0.3s ease;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 11px;
             color: white;
             text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+        
+        .touch-point .direction {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .touch-point .trigram {
+            font-size: 16px;
+            margin-top: 2px;
         }
         
         .touch-point:hover {
@@ -60,10 +71,20 @@
             animation: pulse 2s infinite;
         }
         
+        .touch-point.loading {
+            animation: heartbeat 1s infinite;
+            background: radial-gradient(circle, rgba(255,100,100,0.5) 0%, rgba(255,100,100,0.2) 50%, transparent 70%);
+        }
+        
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
             70% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
             100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
         
         /* Compass positions */
@@ -112,17 +133,18 @@
             display: none;
         }
         
-        /* GPS info display */
-        #gpsInfo {
+        /* GPS info display - iPhone compass style */
+        #compassData {
             position: fixed;
             bottom: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.7);
+            left: 50%;
+            transform: translateX(-50%);
             color: white;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 12px;
-            z-index: 15;
+            font-size: 13px;
+            z-index: 100;
+            text-align: center;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
         
         /* Connection lines */
@@ -145,26 +167,74 @@
             0% { background-position: -100px 0; }
             100% { background-position: 100px 0; }
         }
+        
+        /* Loading seed indicator */
+        #loadingSeed {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            z-index: 50;
+            pointer-events: none;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        #loadingSeed.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .seed-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, 
+                rgba(255, 255, 255, 0.9) 0%, 
+                rgba(255, 255, 255, 0.6) 30%,
+                rgba(255, 255, 255, 0.2) 60%,
+                transparent 100%);
+            border-radius: 50%;
+            animation: seedPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes seedPulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Info Panel -->
     <div class="info-panel" id="infoPanel">
         <h3>Mycelium Network</h3>
-        <p>This AR experience uses your location.</p>
-        <p>Walk around to see models in different directions.</p>
-        <p><small>Models will appear around you at 0.8 meters in 8 compass directions.</small></p>
+        <p>八卦 Bagua - Eight Trigrams</p>
+        <p>Touch the compass points to activate each direction's model.</p>
+        <p><small>Models represent the eight fundamental forces of nature.</small></p>
         <button onclick="startExperience()">Begin</button>
     </div>
     
-    <!-- GPS Info Display -->
-    <div id="gpsInfo" class="hidden">
-        <div>Lat: <span id="lat">-</span></div>
-        <div>Lon: <span id="lon">-</span></div>
-        <div>Active: <span id="activeCount">0</span>/8</div>
+    <!-- Loading seed indicator -->
+    <div id="loadingSeed" class="hidden">
+        <div class="seed-core"></div>
     </div>
     
-    <!-- AR Scene with GPS camera -->
+    <!-- GPS compass data - iPhone style -->
+    <div id="compassData" class="hidden">
+        <span id="coordinates">---</span> <span id="locationValue">---</span> <span id="elevationValue">--- ft Elevation</span>
+    </div>
+    
+    <!-- AR Scene -->
     <a-scene
         id="arScene"
         embedded
@@ -172,34 +242,101 @@
         vr-mode-ui="enabled: false"
         renderer="antialias: true; alpha: true">
         
-        <!-- GPS Camera Entity -->
         <a-camera 
             gps-camera 
             rotation-reader
             look-controls-enabled="false"
             arjs-look-controls="smoothingFactor: 0.1">
         </a-camera>
-        
-        <!-- Models will be added dynamically with gps-entity-place component -->
     </a-scene>
     
-    <!-- Compass Touch Interface -->
+    <!-- Compass Touch Interface with Trigrams -->
     <div class="compass-overlay">
-        <div class="touch-point" id="north" data-direction="north" data-model="1">N</div>
-        <div class="touch-point" id="east" data-direction="east" data-model="3">E</div>
-        <div class="touch-point" id="south" data-direction="south" data-model="5">S</div>
-        <div class="touch-point" id="west" data-direction="west" data-model="7">W</div>
-        <div class="touch-point" id="southwest" data-direction="southwest" data-model="2">SW</div>
-        <div class="touch-point" id="southeast" data-direction="southeast" data-model="4">SE</div>
-        <div class="touch-point" id="northwest" data-direction="northwest" data-model="6">NW</div>
-        <div class="touch-point" id="northeast" data-direction="northeast" data-model="8">NE</div>
+        <div class="touch-point" id="north" data-direction="north">
+            <span class="direction">N</span>
+            <span class="trigram">☵</span>
+        </div>
+        <div class="touch-point" id="northeast" data-direction="northeast">
+            <span class="direction">NE</span>
+            <span class="trigram">☶</span>
+        </div>
+        <div class="touch-point" id="east" data-direction="east">
+            <span class="direction">E</span>
+            <span class="trigram">☳</span>
+        </div>
+        <div class="touch-point" id="southeast" data-direction="southeast">
+            <span class="direction">SE</span>
+            <span class="trigram">☴</span>
+        </div>
+        <div class="touch-point" id="south" data-direction="south">
+            <span class="direction">S</span>
+            <span class="trigram">☲</span>
+        </div>
+        <div class="touch-point" id="southwest" data-direction="southwest">
+            <span class="direction">SW</span>
+            <span class="trigram">☷</span>
+        </div>
+        <div class="touch-point" id="west" data-direction="west">
+            <span class="direction">W</span>
+            <span class="trigram">☱</span>
+        </div>
+        <div class="touch-point" id="northwest" data-direction="northwest">
+            <span class="direction">NW</span>
+            <span class="trigram">☰</span>
+        </div>
         
         <!-- Mycelium connection lines -->
         <div id="connections"></div>
     </div>
     
     <script>
+        // Trigram model mapping - matching your current implementation
+        const trigrams = {
+            'north': { 
+                model: 'model2.glb', 
+                name: 'NORTH',
+                chinese: '☵ 坎 Water'
+            },
+            'southwest': { 
+                model: 'model1.glb', 
+                name: 'SOUTHWEST',
+                chinese: '☷ 坤 Earth'
+            },
+            'east': { 
+                model: 'model7.glb', 
+                name: 'EAST',
+                chinese: '☳ 震 Thunder'
+            },
+            'southeast': { 
+                model: 'model8.glb', 
+                name: 'SOUTHEAST',
+                chinese: '☴ 巽 Wind'
+            },
+            'south': { 
+                model: 'model3.glb', 
+                name: 'SOUTH',
+                chinese: '☲ 離 Fire'
+            },
+            'northwest': { 
+                model: 'model4.glb', 
+                name: 'NORTHWEST',
+                chinese: '☰ 乾 Heaven'
+            },
+            'west': { 
+                model: 'model5.glb', 
+                name: 'WEST',
+                chinese: '☱ 兌 Lake'
+            },
+            'northeast': { 
+                model: 'model6.glb', 
+                name: 'NORTHEAST',
+                chinese: '☶ 艮 Mountain'
+            }
+        };
+        
         let activeModels = new Set();
+        let loadQueue = [];
+        let isLoading = false;
         let userLat = 0;
         let userLon = 0;
         let scene;
@@ -207,67 +344,104 @@
         // Distance in meters from user for models
         const DISTANCE = 1.8;
         
-        // Calculate GPS offset based on direction
-        // Approximate: 1 degree latitude = 111,000 meters
-        // 1 degree longitude varies by latitude
-        function getGPSOffset(direction, lat, lon) {
-            const latOffset = DISTANCE / 111000;
-            const lonOffset = DISTANCE / (111000 * Math.cos(lat * Math.PI / 180));
-            
-            const offsets = {
-                north:     { lat: lat + latOffset,    lon: lon },
-                south:     { lat: lat - latOffset,    lon: lon },
-                east:      { lat: lat,                lon: lon + lonOffset },
-                west:      { lat: lat,                lon: lon - lonOffset },
-                northeast: { lat: lat + latOffset*0.7, lon: lon + lonOffset*0.7 },
-                northwest: { lat: lat + latOffset*0.7, lon: lon - lonOffset*0.7 },
-                southeast: { lat: lat - latOffset*0.7, lon: lon + lonOffset*0.7 },
-                southwest: { lat: lat - latOffset*0.7, lon: lon - lonOffset*0.7 }
-            };
-            
-            return offsets[direction];
-        }
-        
         function startExperience() {
             document.getElementById('infoPanel').classList.add('hidden');
-            document.getElementById('gpsInfo').classList.remove('hidden');
+            document.getElementById('compassData').classList.remove('hidden');
             
             scene = document.querySelector('a-scene');
             
-            // Get user's GPS location
+            // Initialize GPS and compass
+            initCompassAndLocation();
+            initializeTouchPoints();
+        }
+        
+        // Convert decimal degrees to DMS (degrees, minutes, seconds) format
+        function toDMS(decimal, isLat) {
+            const absolute = Math.abs(decimal);
+            const degrees = Math.floor(absolute);
+            const minutesDecimal = (absolute - degrees) * 60;
+            const minutes = Math.floor(minutesDecimal);
+            const seconds = Math.round((minutesDecimal - minutes) * 60);
+            
+            const direction = isLat ? 
+                (decimal >= 0 ? 'N' : 'S') : 
+                (decimal >= 0 ? 'E' : 'W');
+            
+            return `${degrees}°${minutes}'${seconds}"${direction}`;
+        }
+        
+        // Initialize compass and geolocation
+        function initCompassAndLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        userLat = position.coords.latitude;
-                        userLon = position.coords.longitude;
-                        
-                        document.getElementById('lat').textContent = userLat.toFixed(6);
-                        document.getElementById('lon').textContent = userLon.toFixed(6);
-                        
-                        initializeTouchPoints();
-                    },
-                    (error) => {
-                        alert('GPS access required for this experience. Error: ' + error.message);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
-                    }
+                    handlePosition,
+                    handleLocationError,
+                    { enableHighAccuracy: true }
                 );
                 
-                // Watch position for updates
                 navigator.geolocation.watchPosition(
-                    (position) => {
-                        userLat = position.coords.latitude;
-                        userLon = position.coords.longitude;
-                        document.getElementById('lat').textContent = userLat.toFixed(6);
-                        document.getElementById('lon').textContent = userLon.toFixed(6);
-                    }
+                    handlePosition,
+                    handleLocationError,
+                    { enableHighAccuracy: true, maximumAge: 30000, timeout: 27000 }
                 );
-            } else {
-                alert('GPS not supported by your device');
             }
+        }
+        
+        // Handle geolocation position
+        function handlePosition(position) {
+            const coords = position.coords;
+            userLat = coords.latitude;
+            userLon = coords.longitude;
+            
+            // Format coordinates like iPhone compass
+            const latDMS = toDMS(userLat, true);
+            const lonDMS = toDMS(userLon, false);
+            document.getElementById('coordinates').textContent = `${latDMS} ${lonDMS}`;
+            
+            // Convert altitude from meters to feet
+            const elevationFeet = coords.altitude ? Math.round(coords.altitude * 3.28084) : 0;
+            document.getElementById('elevationValue').textContent = `${elevationFeet} ft Elevation`;
+            
+            // Reverse geocoding for location name
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}&zoom=18`)
+                .then(response => response.json())
+                .then(data => {
+                    const address = data.address || {};
+                    const city = address.suburb || 
+                                address.city_district || 
+                                address.neighbourhood || 
+                                address.city || 
+                                address.town || 
+                                address.village || '';
+                    
+                    const state = address.state || address.region || '';
+                    
+                    let locationText = '';
+                    if (city && state) {
+                        locationText = `${city}, ${state}`;
+                    } else if (city || state) {
+                        locationText = city || state;
+                    }
+                    
+                    // Special case for Cyberjaya
+                    if (userLat >= 2.9 && userLat <= 3.0 && userLon >= 101.6 && userLon <= 101.7) {
+                        locationText = locationText.includes('Sepang') ? 
+                            locationText.replace('Sepang', 'Cyberjaya') : locationText;
+                    }
+                    
+                    document.getElementById('locationValue').textContent = locationText;
+                })
+                .catch(err => {
+                    document.getElementById('locationValue').textContent = '';
+                });
+        }
+        
+        // Handle location errors
+        function handleLocationError(error) {
+            console.warn('Location error:', error);
+            document.getElementById('coordinates').textContent = '---';
+            document.getElementById('locationValue').textContent = '';
+            document.getElementById('elevationValue').textContent = '--- ft Elevation';
         }
         
         function initializeTouchPoints() {
@@ -275,52 +449,62 @@
             
             touchPoints.forEach(point => {
                 point.addEventListener('click', (e) => {
-                    activateModel(e.target);
+                    activateModel(e.currentTarget);
                 });
                 
                 point.addEventListener('touchstart', (e) => {
                     e.preventDefault();
-                    activateModel(e.target);
+                    activateModel(e.currentTarget);
                 });
             });
         }
         
         function activateModel(touchPoint) {
             const direction = touchPoint.dataset.direction;
-            const modelNum = touchPoint.dataset.model;
             const modelId = `model-${direction}`;
-            
-            touchPoint.classList.toggle('active');
             
             if (activeModels.has(modelId)) {
                 hideModel(modelId);
                 activeModels.delete(modelId);
-                touchPoint.classList.remove('active');
+                touchPoint.classList.remove('active', 'loading');
             } else {
-                showModel(direction, modelNum, modelId);
-                activeModels.add(modelId);
-                touchPoint.classList.add('active');
+                // Add to queue for large file handling
+                loadQueue.push({ touchPoint, direction, modelId });
+                processLoadQueue();
             }
             
-            document.getElementById('activeCount').textContent = activeModels.size;
             updateConnections();
         }
         
-        function showModel(direction, modelNum, modelId) {
-            // Calculate GPS position
-            const gpsPos = getGPSOffset(direction, userLat, userLon);
+        function processLoadQueue() {
+            if (isLoading || loadQueue.length === 0) return;
             
-            // Define 3D positions for each direction (x, y, z)
-            // Closer positions, lower height, more spread
+            isLoading = true;
+            const { touchPoint, direction, modelId } = loadQueue.shift();
+            
+            // Show loading state
+            touchPoint.classList.add('loading');
+            document.getElementById('loadingSeed').classList.remove('hidden');
+            
+            // Simulate loading time for large models
+            setTimeout(() => {
+                showModel(direction, modelId, touchPoint);
+            }, 500);
+        }
+        
+        function showModel(direction, modelId, touchPoint) {
+            const config = trigrams[direction];
+            
+            // 3D positions for each direction
             const positions3D = {
-                north:     { x: 1,     y: 0,  z: 0.8 },
-                south:     { x: 1,     y: 0,  z: 1.8 },
-                east:      { x: 0.8,   y: 0,  z: 0 },
-                west:      { x: -1.8,  y: 0,  z: 0 },
-                northeast: { x: 0.6,   y: 0,  z: 0.6 },
-                northwest: { x: -1.6,  y: 0,  z: 0.6 },
-                southeast: { x: 1.6,   y: 0,  z: 1.6 },
-                southwest: { x: -1.6,  y: 0,  z: 1.6 }
+                north:     { x: 0,     y: 0, z: -2 },
+                south:     { x: 0,     y: 0, z: 2 },
+                east:      { x: 2,     y: 0, z: 0 },
+                west:      { x: -2,    y: 0, z: 0 },
+                northeast: { x: 1.4,   y: 0, z: -1.4 },
+                northwest: { x: -1.4,  y: 0, z: -1.4 },
+                southeast: { x: 1.4,   y: 0, z: 1.4 },
+                southwest: { x: -1.4,  y: 0, z: 1.4 }
             };
             
             const pos3D = positions3D[direction];
@@ -328,104 +512,127 @@
             // Create model entity
             const model = document.createElement('a-entity');
             model.setAttribute('id', modelId);
-            model.setAttribute('gltf-model', `./models/model${modelNum}.glb`);
-            model.setAttribute('gps-entity-place', `latitude: ${gpsPos.lat}; longitude: ${gpsPos.lon};`);
-            
-            // Set initial position (center, on ground) and scale
-            model.setAttribute('position', '0 0 0.3');
-            model.setAttribute('scale', '0 0 0');
+            model.setAttribute('gltf-model', `./models/${config.model}`);
+            model.setAttribute('position', '0 -0.8 0');
+            model.setAttribute('scale', '0.1 0.1 0.1');
             
             scene.appendChild(model);
             
-            // Wait a moment for entity to be properly added
+            // Wait for model to load
+            model.addEventListener('model-loaded', () => {
+                // Hide loading indicators
+                touchPoint.classList.remove('loading');
+                touchPoint.classList.add('active');
+                document.getElementById('loadingSeed').classList.add('hidden');
+                
+                // Start growth animation
+                startGrowthAnimation(model, pos3D);
+                
+                activeModels.add(modelId);
+                updateConnections();
+                
+                // Process next in queue
+                isLoading = false;
+                processLoadQueue();
+            });
+            
+            // Timeout for failed loads
             setTimeout(() => {
-                // Phase 1: Slow grow at center (like fungi emerging from soil)
-                model.setAttribute('animation__grow', {
-                    property: 'scale',
+                if (touchPoint.classList.contains('loading')) {
+                    touchPoint.classList.remove('loading');
+                    document.getElementById('loadingSeed').classList.add('hidden');
+                    isLoading = false;
+                    processLoadQueue();
+                }
+            }, 10000);
+        }
+        
+        function startGrowthAnimation(model, targetPos) {
+            // Phase 1: Emergence from ground
+            model.setAttribute('animation__grow1', {
+                property: 'scale',
+                from: '0.1 0.1 0.1',
+                to: '0.45 0.45 0.45',
+                dur: 4000,
+                easing: 'easeInOutQuad'
+            });
+            
+            model.setAttribute('animation__rise1', {
+                property: 'position',
+                from: '0 -0.8 0',
+                to: '0 0 0',
+                dur: 5000,
+                easing: 'easeInOutQuad'
+            });
+            
+            // Phase 2: Move to direction while growing
+            setTimeout(() => {
+                model.setAttribute('animation__spread', {
+                    property: 'position',
                     from: '0 0 0',
-                    to: '0.3 0.3 0.3',
-                    dur: 1800,
-                    easing: 'easeOutQuad'
+                    to: `${targetPos.x} ${targetPos.y} ${targetPos.z}`,
+                    dur: 5000,
+                    easing: 'easeInOutSine'
                 });
                 
-                // Phase 2: Move to direction position while continuing to grow
-                setTimeout(() => {
-                    model.setAttribute('animation__spread', {
-                        property: 'position',
-                        from: '0 0 0.5',
-                        to: `${pos3D.x} ${pos3D.y} ${pos3D.z}`,
-                        dur: 2000,
-                        easing: 'easeOutExpo'
-                    });
-                    
-                    model.setAttribute('animation__fullgrow', {
-                        property: 'scale',
-                        from: '0.3 0.3 0.3',
-                        to: '0.6 0.6 0.6',
-                        dur: 2000,
-                        easing: 'easeOutElastic'
-                    });
-                }, 1800);
+                model.setAttribute('animation__grow2', {
+                    property: 'scale',
+                    from: '0.45 0.45 0.45',
+                    to: '0.8 0.8 0.8',
+                    dur: 5000,
+                    easing: 'easeInOutSine'
+                });
+            }, 5000);
+            
+            // Phase 3: Final animations
+            setTimeout(() => {
+                model.setAttribute('animation__rotate', {
+                    property: 'rotation',
+                    to: '0 360 0',
+                    dur: 40000,
+                    loop: true,
+                    easing: 'linear'
+                });
                 
-                // Phase 3: Add continuous animations after spreading
-                setTimeout(() => {
-                    // Rotation
-                    model.setAttribute('animation__rotate', {
-                        property: 'rotation',
-                        to: '0 360 0',
-                        dur: 10000,
-                        loop: true,
-                        easing: 'linear'
-                    });
-                    
-                    // Floating
-                    model.setAttribute('animation__float', {
-                        property: 'position.y',
-                        from: pos3D.y,
-                        to: pos3D.y + 0.5,
-                        dur: 3000,
-                        loop: true,
-                        dir: 'alternate',
-                        easing: 'easeInOutSine'
-                    });
-                }, 3800);
-            }, 100);
+                model.setAttribute('animation__float', {
+                    property: 'position',
+                    from: `${targetPos.x} ${targetPos.y} ${targetPos.z}`,
+                    to: `${targetPos.x} ${targetPos.y + 0.5} ${targetPos.z}`,
+                    dur: 10000,
+                    loop: true,
+                    dir: 'alternate',
+                    easing: 'easeInOutSine'
+                });
+            }, 10000);
         }
         
         function hideModel(modelId) {
             const model = document.getElementById(modelId);
             if (!model) return;
             
-            // Get current position
-            const currentPos = model.getAttribute('position');
-            
-            // Remove ongoing animations
             model.removeAttribute('animation__rotate');
             model.removeAttribute('animation__float');
             
-            // Move back to center (matching start position)
+            // Shrink and move back to center
             model.setAttribute('animation__return', {
                 property: 'position',
-                from: `${currentPos.x} ${currentPos.y} ${currentPos.z}`,
-                to: '0 0 -0.5',
-                dur: 1000,
+                to: '0 -0.8 0',
+                dur: 2000,
                 easing: 'easeInExpo'
             });
             
-            // Shrink animation
             model.setAttribute('animation__shrink', {
                 property: 'scale',
                 to: '0 0 0',
-                dur: 1000,
+                dur: 2000,
                 easing: 'easeInQuad'
             });
             
-            // Remove after animation
             setTimeout(() => {
                 if (model && model.parentNode) {
                     model.parentNode.removeChild(model);
                 }
-            }, 1000);
+            }, 2000);
         }
         
         function updateConnections() {
